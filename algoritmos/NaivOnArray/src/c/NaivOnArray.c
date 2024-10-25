@@ -24,63 +24,53 @@ void readMatrices(const char *filename, long long ****matrices, int **rows, int 
         exit(EXIT_FAILURE);
     }
 
-    long long ***tempMatrices = malloc(10 * sizeof(long long **)); // Arreglo para almacenar las matrices
-    *rows = malloc(10 * sizeof(int)); // Espacio para filas
-    *cols = malloc(10 * sizeof(int)); // Espacio para columnas
+    long long ***tempMatrices = malloc(10 * sizeof(long long **));
+    *rows = malloc(10 * sizeof(int));
+    *cols = malloc(10 * sizeof(int));
     int count = 0;
 
     while (!feof(file)) {
-        long long **matrix = NULL; // Inicializa como NULL
+        long long **matrix = NULL;
         int r = 0, c = 0;
-        char buffer[512]; // Tamaño del buffer
+        char buffer[4096]; // Tamaño aumentado del buffer
 
         while (fgets(buffer, sizeof(buffer), file)) {
-            if (buffer[0] == '\n') { // Si encontramos una línea en blanco, terminamos esta matriz
-                if (r > 0) break; // Solo salir si hemos leído al menos una fila
-                continue; // Si es una línea en blanco y no hemos leído filas, continúa
+            if (buffer[0] == '\n') {
+                if (r > 0) break;
+                continue;
             }
 
-            // Contador de columnas
             int colCount = 0;
             char *token = strtok(buffer, " ");
             while (token != NULL) {
-                if (colCount == 0) { // Asigna memoria solo en la primera columna
+                if (colCount == 0) {
                     matrix = realloc(matrix, sizeof(long long *) * (r + 1));
-                    if (!matrix) {
-                        perror("Error al reasignar memoria");
-                        exit(EXIT_FAILURE);
-                    }
-                    matrix[r] = malloc(sizeof(long long) * (strlen(buffer) / 2 + 1)); // Estimación de columnas
+                    matrix[r] = malloc(sizeof(long long) * 128); // Ajuste de estimación de columnas
                 }
-                matrix[r][colCount++] = atoll(token); // Convierte y almacena el número
+                matrix[r][colCount++] = atoll(token);
                 token = strtok(NULL, " ");
             }
 
-            // Mensajes de depuración
-            printf("Leyendo fila %d: %s", r, buffer);
-            printf("Columnas leídas en la fila %d: %d\n", r, colCount);
-
-            // Verifica el número de columnas
             if (r == 0) {
-                c = colCount; // Guardar el número de columnas de la primera fila
+                c = colCount;
             } else if (colCount != c) {
                 fprintf(stderr, "Error: todas las filas deben tener el mismo número de columnas\n");
                 exit(EXIT_FAILURE);
             }
 
-            r++; // Incrementa el contador de filas
+            r++;
         }
 
         if (r > 0) {
             tempMatrices[count] = matrix;
             (*rows)[count] = r;
-            (*cols)[count] = c; // Almacena el número de columnas
+            (*cols)[count] = c;
             count++;
         }
     }
 
     fclose(file);
-    *matrices = realloc(tempMatrices, sizeof(long long **) * count); // Reasigna memoria para el arreglo de matrices final
+    *matrices = realloc(tempMatrices, sizeof(long long **) * count);
     *matrixCount = count;
 }
 
