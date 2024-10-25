@@ -164,12 +164,12 @@ int main(int argc, char *argv[]) {
 
     // Crea las rutas y nombres de archivos semánticos
     char tiempoFile[100], resultadoFile[100];
-    sprintf(tiempoFile, "../../../../Resultados/NaivOnArray/tiempo/tiempo_NaivOnArray_%dx%d.txt", rows[0], cols[1]);
-    sprintf(resultadoFile, "../../../../Resultados/NaivOnArray/resultadomultiplicacion/resultado_NaivOnArray_%dx%d.txt", rows[0], cols[1]);
+    sprintf(tiempoFile, "../../../../Resultados/NaivOnArray/c/tiempo/tiempo_NaivOnArray_%dx%d.txt", rows[0], cols[1]);
+    sprintf(resultadoFile, "../../../../Resultados/NaivOnArray/c/resultadomultiplicacion/resultado_NaivOnArray_%dx%d.txt", rows[0], cols[1]);
 
     // Crea los directorios necesarios
-    createDirectoriesRecursively("../../../../Resultados/NaivOnArray/tiempo");
-    createDirectoriesRecursively("../../../../Resultados/NaivOnArray/resultadomultiplicacion");
+    createDirectoriesRecursively("../../../../Resultados/NaivOnArray/c/tiempo");
+    createDirectoriesRecursively("../../../../Resultados/NaivOnArray/c/resultadomultiplicacion");
 
     // Calcula y guarda el tiempo de ejecución
     double elapsedTime = (double)(end - start) / CLOCKS_PER_SEC;
