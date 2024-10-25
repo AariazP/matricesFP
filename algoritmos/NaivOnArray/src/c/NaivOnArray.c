@@ -24,45 +24,63 @@ void readMatrices(const char *filename, long long ****matrices, int **rows, int 
         exit(EXIT_FAILURE);
     }
 
-    long long **tempMatrices[10]; // Cambia el tipo a un arreglo de punteros a punteros
-    *rows = malloc(10 * sizeof(int)); // Inicializa espacio para las filas
-    *cols = malloc(10 * sizeof(int)); // Inicializa espacio para las columnas
+    long long ***tempMatrices = malloc(10 * sizeof(long long **)); // Arreglo para almacenar las matrices
+    *rows = malloc(10 * sizeof(int)); // Espacio para filas
+    *cols = malloc(10 * sizeof(int)); // Espacio para columnas
     int count = 0;
 
     while (!feof(file)) {
-        long long **matrix = malloc(sizeof(long long *) * 4); // Asume matrices de hasta 4 filas
+        long long **matrix = NULL; // Inicializa como NULL
         int r = 0, c = 0;
+        char buffer[512]; // Tamaño del buffer
 
-        while (1) {
-            char buffer[256];
-            if (fgets(buffer, sizeof(buffer), file) == NULL || buffer[0] == '\n') break; // Línea en blanco o EOF
+        while (fgets(buffer, sizeof(buffer), file)) {
+            if (buffer[0] == '\n') { // Si encontramos una línea en blanco, terminamos esta matriz
+                if (r > 0) break; // Solo salir si hemos leído al menos una fila
+                continue; // Si es una línea en blanco y no hemos leído filas, continúa
+            }
 
+            // Contador de columnas
+            int colCount = 0;
             char *token = strtok(buffer, " ");
-            c = 0; // Reinicia el conteo de columnas
             while (token != NULL) {
-                if (c == 0) {
-                    matrix[r] = malloc(sizeof(long long) * 4); // Asume que habrá 4 columnas
+                if (colCount == 0) { // Asigna memoria solo en la primera columna
+                    matrix = realloc(matrix, sizeof(long long *) * (r + 1));
+                    if (!matrix) {
+                        perror("Error al reasignar memoria");
+                        exit(EXIT_FAILURE);
+                    }
+                    matrix[r] = malloc(sizeof(long long) * (strlen(buffer) / 2 + 1)); // Estimación de columnas
                 }
-                matrix[r][c++] = atoll(token); // Cambia a atoll
+                matrix[r][colCount++] = atoll(token); // Convierte y almacena el número
                 token = strtok(NULL, " ");
             }
-            r++;
+
+            // Mensajes de depuración
+            printf("Leyendo fila %d: %s", r, buffer);
+            printf("Columnas leídas en la fila %d: %d\n", r, colCount);
+
+            // Verifica el número de columnas
+            if (r == 0) {
+                c = colCount; // Guardar el número de columnas de la primera fila
+            } else if (colCount != c) {
+                fprintf(stderr, "Error: todas las filas deben tener el mismo número de columnas\n");
+                exit(EXIT_FAILURE);
+            }
+
+            r++; // Incrementa el contador de filas
         }
 
         if (r > 0) {
-            // Almacena la matriz leída
             tempMatrices[count] = matrix;
             (*rows)[count] = r;
-            (*cols)[count] = c; // Asume que todas las filas tienen la misma cantidad de columnas
+            (*cols)[count] = c; // Almacena el número de columnas
             count++;
         }
     }
 
     fclose(file);
-    *matrices = malloc(sizeof(long long **) * count); // Asigna memoria para el arreglo de matrices
-    for (int i = 0; i < count; i++) {
-        (*matrices)[i] = tempMatrices[i]; // Copia las matrices leídas
-    }
+    *matrices = realloc(tempMatrices, sizeof(long long **) * count); // Reasigna memoria para el arreglo de matrices final
     *matrixCount = count;
 }
 
@@ -75,7 +93,7 @@ void writeMatrix(const char *filename, long long **matrix, int rows, int cols) {
 
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            fprintf(file, "%lld ", matrix[i][j]); // Cambia a %lld
+            fprintf(file, "%lld ", matrix[i][j]); // Escribe cada elemento
         }
         fprintf(file, "\n");
     }
@@ -135,6 +153,10 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Imprimir el número de filas y columnas de las matrices que se van a multiplicar
+    printf("Matriz A: %d filas, %d columnas\n", rows[0], cols[0]);
+    printf("Matriz B: %d filas, %d columnas\n", rows[1], cols[1]);
+
     // Verifica si las matrices pueden ser multiplicadas
     if (cols[0] != rows[1]) {
         fprintf(stderr, "Error: Las matrices no se pueden multiplicar\n");
@@ -143,7 +165,7 @@ int main(int argc, char *argv[]) {
 
     long long **result = malloc(rows[0] * sizeof(long long *));
     for (int i = 0; i < rows[0]; i++) {
-        result[i] = malloc(cols[1] * sizeof(long long));
+        result[i] = calloc(cols[1], sizeof(long long)); // Inicializa el resultado a 0
     }
 
     clock_t start = clock();
