@@ -1,9 +1,55 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
-void strassen_winograd(long long **A, long long **B, long long **C, int n) {
-    if (n <= 2) {
-        // Base case: 2x2 or 1x1 matrix
+// Función auxiliar para crear una matriz dinámica de tamaño n x n
+long long** crear_matriz(int n) {
+    long long** matriz = (long long**)malloc(n * sizeof(long long*));
+    if (matriz == NULL) {
+        fprintf(stderr, "Error: No se pudo asignar memoria\n");
+        exit(1);
+    }
+    for (int i = 0; i < n; i++) {
+        matriz[i] = (long long*)calloc(n, sizeof(long long));
+        if (matriz[i] == NULL) {
+            fprintf(stderr, "Error: No se pudo asignar memoria\n");
+            exit(1);
+        }
+    }
+    return matriz;
+}
+
+// Función para liberar la memoria de una matriz
+void liberar_matriz(long long** matriz, int n) {
+    if (matriz == NULL) return;
+    for (int i = 0; i < n; i++) {
+        free(matriz[i]);
+    }
+    free(matriz);
+}
+
+// Función para sumar dos matrices
+void sumar_matrices(long long** A, long long** B, long long** C, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            C[i][j] = A[i][j] + B[i][j];
+        }
+    }
+}
+
+// Función para restar dos matrices
+void restar_matrices(long long** A, long long** B, long long** C, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            C[i][j] = A[i][j] - B[i][j];
+        }
+    }
+}
+
+// Función para multiplicar matrices usando el algoritmo de Strassen-Winograd
+void strassen_winograd(long long** A, long long** B, long long** C, int n) {
+    // Caso base: matrices pequeñas
+    if (n <= 64) { // Umbral ajustable según rendimiento
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 C[i][j] = 0;
@@ -18,74 +64,78 @@ void strassen_winograd(long long **A, long long **B, long long **C, int n) {
     int mid = n / 2;
 
     // Crear submatrices
-    long long **A11 = (long long **)malloc(mid * sizeof(long long *));
-    long long **A12 = (long long **)malloc(mid * sizeof(long long *));
-    long long **A21 = (long long **)malloc(mid * sizeof(long long *));
-    long long **A22 = (long long **)malloc(mid * sizeof(long long *));
+    long long** A11 = crear_matriz(mid);
+    long long** A12 = crear_matriz(mid);
+    long long** A21 = crear_matriz(mid);
+    long long** A22 = crear_matriz(mid);
+    long long** B11 = crear_matriz(mid);
+    long long** B12 = crear_matriz(mid);
+    long long** B21 = crear_matriz(mid);
+    long long** B22 = crear_matriz(mid);
+    long long** C11 = crear_matriz(mid);
+    long long** C12 = crear_matriz(mid);
+    long long** C21 = crear_matriz(mid);
+    long long** C22 = crear_matriz(mid);
     
-    long long **B11 = (long long **)malloc(mid * sizeof(long long *));
-    long long **B12 = (long long **)malloc(mid * sizeof(long long *));
-    long long **B21 = (long long **)malloc(mid * sizeof(long long *));
-    long long **B22 = (long long **)malloc(mid * sizeof(long long *));
+    // Matrices temporales para Winograd
+    long long** S1 = crear_matriz(mid);
+    long long** S2 = crear_matriz(mid);
+    long long** S3 = crear_matriz(mid);
+    long long** S4 = crear_matriz(mid);
+    long long** T1 = crear_matriz(mid);
+    long long** T2 = crear_matriz(mid);
+    long long** T3 = crear_matriz(mid);
+    long long** T4 = crear_matriz(mid);
+    long long** P1 = crear_matriz(mid);
+    long long** P2 = crear_matriz(mid);
+    long long** P3 = crear_matriz(mid);
+    long long** P4 = crear_matriz(mid);
+    long long** P5 = crear_matriz(mid);
+    long long** U1 = crear_matriz(mid);
+    long long** U2 = crear_matriz(mid);
+    long long** U3 = crear_matriz(mid);
+    long long** U4 = crear_matriz(mid);
+    long long** U5 = crear_matriz(mid);
 
-    long long **M1 = (long long **)malloc(mid * sizeof(long long *));
-    long long **M2 = (long long **)malloc(mid * sizeof(long long *));
-    long long **M3 = (long long **)malloc(mid * sizeof(long long *));
-    long long **M4 = (long long **)malloc(mid * sizeof(long long *));
-    long long **M5 = (long long **)malloc(mid * sizeof(long long *));
-    long long **M6 = (long long **)malloc(mid * sizeof(long long *));
-    long long **M7 = (long long **)malloc(mid * sizeof(long long *));
-
-    long long **C11 = (long long **)malloc(mid * sizeof(long long *));
-    long long **C12 = (long long **)malloc(mid * sizeof(long long *));
-    long long **C21 = (long long **)malloc(mid * sizeof(long long *));
-    long long **C22 = (long long **)malloc(mid * sizeof(long long *));
-
-    // Inicializa los punteros a las submatrices
-    for (int i = 0; i < mid; i++) {
-        A11[i] = (long long *)malloc(mid * sizeof(long long));
-        A12[i] = (long long *)malloc(mid * sizeof(long long));
-        A21[i] = (long long *)malloc(mid * sizeof(long long));
-        A22[i] = (long long *)malloc(mid * sizeof(long long));
-
-        B11[i] = (long long *)malloc(mid * sizeof(long long));
-        B12[i] = (long long *)malloc(mid * sizeof(long long));
-        B21[i] = (long long *)malloc(mid * sizeof(long long));
-        B22[i] = (long long *)malloc(mid * sizeof(long long));
-
-        M1[i] = (long long *)malloc(mid * sizeof(long long));
-        M2[i] = (long long *)malloc(mid * sizeof(long long));
-        M3[i] = (long long *)malloc(mid * sizeof(long long));
-        M4[i] = (long long *)malloc(mid * sizeof(long long));
-        M5[i] = (long long *)malloc(mid * sizeof(long long));
-        M6[i] = (long long *)malloc(mid * sizeof(long long));
-        M7[i] = (long long *)malloc(mid * sizeof(long long));
-
-        C11[i] = (long long *)malloc(mid * sizeof(long long));
-        C12[i] = (long long *)malloc(mid * sizeof(long long));
-        C21[i] = (long long *)malloc(mid * sizeof(long long));
-        C22[i] = (long long *)malloc(mid * sizeof(long long));
-    }
-
-    // Calcular las 7 matrices intermedias
-    strassen_winograd(A11, B11, M1, mid);
-    strassen_winograd(A21, B11, M2, mid);
-    strassen_winograd(A11, B12, M3, mid);
-    strassen_winograd(A22, B21, M4, mid);
-    strassen_winograd(A11, B22, M5, mid);
-    strassen_winograd(A21, B12, M6, mid);
-    strassen_winograd(A12, B21, M7, mid);
-
-    // Calcular la matriz C a partir de las matrices intermedias
+    // Dividir las matrices en submatrices
     for (int i = 0; i < mid; i++) {
         for (int j = 0; j < mid; j++) {
-            C11[i][j] = M1[i][j] + M4[i][j] - M5[i][j] + M7[i][j];
-            C12[i][j] = M3[i][j] + M5[i][j];
-            C21[i][j] = M2[i][j] + M4[i][j];
-            C22[i][j] = M1[i][j] - M2[i][j] + M3[i][j] + M6[i][j];
+            A11[i][j] = A[i][j];
+            A12[i][j] = A[i][j + mid];
+            A21[i][j] = A[i + mid][j];
+            A22[i][j] = A[i + mid][j + mid];
+            B11[i][j] = B[i][j];
+            B12[i][j] = B[i][j + mid];
+            B21[i][j] = B[i + mid][j];
+            B22[i][j] = B[i + mid][j + mid];
         }
     }
 
+    // Cálculos de Winograd
+    sumar_matrices(A21, A22, S1, mid);   // S1 = A21 + A22
+    restar_matrices(S1, A11, S2, mid);   // S2 = S1 - A11
+    restar_matrices(A11, A21, S3, mid);  // S3 = A11 - A21
+    restar_matrices(A12, S2, S4, mid);   // S4 = A12 - S2
+    
+    restar_matrices(B12, B11, T1, mid);  // T1 = B12 - B11
+    restar_matrices(B22, T1, T2, mid);   // T2 = B22 - T1
+    restar_matrices(B22, B12, T3, mid);  // T3 = B22 - B12
+    restar_matrices(T2, B21, T4, mid);   // T4 = T2 - B21
+
+    // Productos recursivos
+    strassen_winograd(A11, B11, P1, mid);      // P1 = A11 * B11
+    strassen_winograd(A12, B21, P2, mid);      // P2 = A12 * B21
+    strassen_winograd(S4, B22, P3, mid);       // P3 = S4 * B22
+    strassen_winograd(A22, T4, P4, mid);       // P4 = A22 * T4
+    strassen_winograd(S1, T1, P5, mid);        // P5 = S1 * T1
+
+    // Cálculo de las submatrices de C usando Winograd
+    sumar_matrices(P1, P2, C11, mid);          // C11 = P1 + P2
+    sumar_matrices(P1, P3, C12, mid);          // C12 = P1 + P3
+    sumar_matrices(P1, P4, C21, mid);          // C21 = P1 + P4
+    sumar_matrices(C11, P5, C22, mid);         // C22 = C11 + P5
+
+    // Combinar las submatrices en la matriz resultado
     for (int i = 0; i < mid; i++) {
         for (int j = 0; j < mid; j++) {
             C[i][j] = C11[i][j];
@@ -95,59 +145,27 @@ void strassen_winograd(long long **A, long long **B, long long **C, int n) {
         }
     }
 
-    // Fusiona las submatrices en C
-    for (int i = 0; i < mid; i++) {
-        for (int j = 0; j < mid; j++) {
-            C[i][j] = C11[i][j];
-            C[i][j + mid] = C12[i][j];
-            C[i + mid][j] = C21[i][j];
-            C[i + mid][j + mid] = C22[i][j];
-        }
-    }
-
-    for (int i = 0; i < mid; i++) {
-        free(A11[i]);
-        free(A12[i]);
-        free(A21[i]);
-        free(A22[i]);
-        free(B11[i]);
-        free(B12[i]);
-        free(B21[i]);
-        free(B22[i]);
-        free(M1[i]);
-        free(M2[i]);
-        free(M3[i]);
-        free(M4[i]);
-        free(M5[i]);
-        free(M6[i]);
-        free(M7[i]);
-        free(C11[i]);
-        free(C12[i]);
-        free(C21[i]);
-        free(C22[i]);
-    }
-    free(A11);
-    free(A12);
-    free(A21);
-    free(A22);
-    free(B11);
-    free(B12);
-    free(B21);
-    free(B22);
-    free(M1);
-    free(M2);
-    free(M3);
-    free(M4);
-    free(M5);
-    free(M6);
-    free(M7);
-    free(C11);
-    free(C12);
-    free(C21);
-    free(C22);
+    // Liberar memoria
+    liberar_matriz(A11, mid); liberar_matriz(A12, mid);
+    liberar_matriz(A21, mid); liberar_matriz(A22, mid);
+    liberar_matriz(B11, mid); liberar_matriz(B12, mid);
+    liberar_matriz(B21, mid); liberar_matriz(B22, mid);
+    liberar_matriz(C11, mid); liberar_matriz(C12, mid);
+    liberar_matriz(C21, mid); liberar_matriz(C22, mid);
+    liberar_matriz(S1, mid); liberar_matriz(S2, mid);
+    liberar_matriz(S3, mid); liberar_matriz(S4, mid);
+    liberar_matriz(T1, mid); liberar_matriz(T2, mid);
+    liberar_matriz(T3, mid); liberar_matriz(T4, mid);
+    liberar_matriz(P1, mid); liberar_matriz(P2, mid);
+    liberar_matriz(P3, mid); liberar_matriz(P4, mid);
+    liberar_matriz(P5, mid);
+    liberar_matriz(U1, mid); liberar_matriz(U2, mid);
+    liberar_matriz(U3, mid); liberar_matriz(U4, mid);
+    liberar_matriz(U5, mid);
 }
 
-void multiplicacion_estandar(long long **A, long long **B, long long **C, int n) {
+// Función de multiplicación estándar para comparación
+void multiplicacion_estandar(long long** A, long long** B, long long** C, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             C[i][j] = 0;
@@ -158,69 +176,58 @@ void multiplicacion_estandar(long long **A, long long **B, long long **C, int n)
     }
 }
 
+// Función para imprimir una matriz
+void imprimir_matriz(long long** matriz, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%lld ", matriz[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 int main() {
+    srand(time(NULL));  // Inicializar semilla para números aleatorios
+    
+    // Asegurarse que n sea potencia de 2
     int n = 4;
-    long long **A = (long long **)malloc(n * sizeof(long long *));
-    long long **B = (long long **)malloc(n * sizeof(long long *));
-    long long **C = (long long **)malloc(n * sizeof(long long *));
+    
+    // Crear y asignar memoria para las matrices
+    long long** A = crear_matriz(n);
+    long long** B = crear_matriz(n);
+    long long** C = crear_matriz(n);
+    long long** C_std = crear_matriz(n);
 
-    // Inicializa las matrices A y B
+    // Inicializar matrices con valores aleatorios
     for (int i = 0; i < n; i++) {
-        A[i] = (long long *)malloc(n * sizeof(long long));
-        B[i] = (long long *)malloc(n * sizeof(long long));
-        C[i] = (long long *)malloc(n * sizeof(long long));
-
         for (int j = 0; j < n; j++) {
-            A[i][j] = rand() % 1000;  // Genera números aleatorios más grandes
-            B[i][j] = rand() % 1000;  // Genera números aleatorios más grandes
+            A[i][j] = rand() % 10;  // Números más pequeños para facilitar verificación
+            B[i][j] = rand() % 10;
         }
     }
 
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%lld ", A[i][j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%lld ", B[i][j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-
+    printf("Matriz A:\n");
+    imprimir_matriz(A, n);
+    
+    printf("Matriz B:\n");
+    imprimir_matriz(B, n);
+    
+    // Realizar multiplicación usando Strassen-Winograd
     strassen_winograd(A, B, C, n);
+    printf("Resultado usando Strassen-Winograd:\n");
+    imprimir_matriz(C, n);
+    
+    // Realizar multiplicación estándar para comparación
+    multiplicacion_estandar(A, B, C_std, n);
+    printf("Resultado usando multiplicación estándar:\n");
+    imprimir_matriz(C_std, n);
 
-    printf("Resultado de la multiplicación Strassen:\n");
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%lld ", C[i][j]);
-        }
-        printf("\n");
-    }
-
-    multiplicacion_estandar(A, B, C, n);
-
-    printf("Resultado de la multiplicación estandar:\n");
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%lld ", C[i][j]);
-        }
-        printf("\n");
-    }
-
-    // Libera la memoria
-    for (int i = 0; i < n; i++) {
-        free(A[i]);
-        free(B[i]);
-        free(C[i]);
-    }
-    free(A);
-    free(B);
-    free(C);
+    // Liberar memoria
+    liberar_matriz(A, n);
+    liberar_matriz(B, n);
+    liberar_matriz(C, n);
+    liberar_matriz(C_std, n);
 
     return 0;
 }

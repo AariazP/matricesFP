@@ -89,7 +89,7 @@ void printMatrix(long long **matrix, int rows, int cols) {
 
 // Función de prueba del algoritmo Winograd
 void testWinograd() {
-    int rowA = 3, colA = 4, colB = 3; // Dimensiones de ejemplo
+    int rowA = 4, colA = 4, colB = 4; // Dimensiones de ejemplo
 
     // Crear e inicializar matrices A y B
     long long **A = createMatrix(rowA, colA);
