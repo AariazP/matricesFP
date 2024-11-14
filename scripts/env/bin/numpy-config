@@ -1,4 +1,4 @@
-#!/Users/aariaz/Desktop/matricesFP/scripts/env/bin/python3
+#!/home/juan/Documents/Algoritmos/proyecto/matricesFP/scripts/env/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
