@@ -13,6 +13,9 @@ def winograd_scaled(A, B):
     row_scale = [max(abs(A[i][j]) for j in range(n)) for i in range(m)]
     col_scale = [max(abs(B[i][j]) for i in range(n)) for j in range(p)]
 
+    print(row_scale)
+    print(col_scale)
+
     # Factores de fila y columna
     row_factor = [0] * m
     col_factor = [0] * p
