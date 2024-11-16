@@ -47,12 +47,11 @@ def read_matrices(filename):
                 matrix.append(row)
             else:
                 if matrix:
-                    matrices.append(matrix)
+                    matrices.append(np.array(matrix))  # Convertir a numpy.array
                     matrix = []
         if matrix:
-            matrices.append(matrix)
+            matrices.append(np.array(matrix))  # Convertir a numpy.array
     return matrices
-
 
 def write_matrix(filename, matrix):
     with open(filename, 'w') as file:

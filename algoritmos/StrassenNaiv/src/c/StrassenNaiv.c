@@ -1,25 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <string.h>
-#include <errno.h>
-#include <math.h>
 
-void add(int **A, int **B, int **C, int n) {
+// Operaciones básicas para matrices
+void add(long long **A, long long **B, long long **C, int n) {
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++)
             C[i][j] = A[i][j] + B[i][j];
 }
 
-void subtract(int **A, int **B, int **C, int n) {
+void subtract(long long **A, long long **B, long long **C, int n) {
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++)
             C[i][j] = A[i][j] - B[i][j];
 }
 
-void multiplyMatricesStrassenNaiv(int **A, int **B, int **C, int n) {
+// Algoritmo de Strassen
+void multiplyMatricesStrassenNaiv(long long **A, long long **B, long long **C, int n) {
     if (n == 1) {
         C[0][0] = A[0][0] * B[0][0];
         return;
@@ -28,50 +29,50 @@ void multiplyMatricesStrassenNaiv(int **A, int **B, int **C, int n) {
     int mid = n / 2;
 
     // Reservar memoria para las submatrices
-    int **A11 = (int **)malloc(mid * sizeof(int *));
-    int **A12 = (int **)malloc(mid * sizeof(int *));
-    int **A21 = (int **)malloc(mid * sizeof(int *));
-    int **A22 = (int **)malloc(mid * sizeof(int *));
-    int **B11 = (int **)malloc(mid * sizeof(int *));
-    int **B12 = (int **)malloc(mid * sizeof(int *));
-    int **B21 = (int **)malloc(mid * sizeof(int *));
-    int **B22 = (int **)malloc(mid * sizeof(int *));
-    int **C11 = (int **)malloc(mid * sizeof(int *));
-    int **C12 = (int **)malloc(mid * sizeof(int *));
-    int **C21 = (int **)malloc(mid * sizeof(int *));
-    int **C22 = (int **)malloc(mid * sizeof(int *));
-    int **M1 = (int **)malloc(mid * sizeof(int *));
-    int **M2 = (int **)malloc(mid * sizeof(int *));
-    int **M3 = (int **)malloc(mid * sizeof(int *));
-    int **M4 = (int **)malloc(mid * sizeof(int *));
-    int **M5 = (int **)malloc(mid * sizeof(int *));
-    int **M6 = (int **)malloc(mid * sizeof(int *));
-    int **M7 = (int **)malloc(mid * sizeof(int *));
-    int **temp1 = (int **)malloc(mid * sizeof(int *));
-    int **temp2 = (int **)malloc(mid * sizeof(int *));
+    long long **A11 = malloc(mid * sizeof(long long *));
+    long long **A12 = malloc(mid * sizeof(long long *));
+    long long **A21 = malloc(mid * sizeof(long long *));
+    long long **A22 = malloc(mid * sizeof(long long *));
+    long long **B11 = malloc(mid * sizeof(long long *));
+    long long **B12 = malloc(mid * sizeof(long long *));
+    long long **B21 = malloc(mid * sizeof(long long *));
+    long long **B22 = malloc(mid * sizeof(long long *));
+    long long **C11 = malloc(mid * sizeof(long long *));
+    long long **C12 = malloc(mid * sizeof(long long *));
+    long long **C21 = malloc(mid * sizeof(long long *));
+    long long **C22 = malloc(mid * sizeof(long long *));
+    long long **M1 = malloc(mid * sizeof(long long *));
+    long long **M2 = malloc(mid * sizeof(long long *));
+    long long **M3 = malloc(mid * sizeof(long long *));
+    long long **M4 = malloc(mid * sizeof(long long *));
+    long long **M5 = malloc(mid * sizeof(long long *));
+    long long **M6 = malloc(mid * sizeof(long long *));
+    long long **M7 = malloc(mid * sizeof(long long *));
+    long long **temp1 = malloc(mid * sizeof(long long *));
+    long long **temp2 = malloc(mid * sizeof(long long *));
 
     for (int i = 0; i < mid; i++) {
-        A11[i] = (int *)malloc(mid * sizeof(int));
-        A12[i] = (int *)malloc(mid * sizeof(int));
-        A21[i] = (int *)malloc(mid * sizeof(int));
-        A22[i] = (int *)malloc(mid * sizeof(int));
-        B11[i] = (int *)malloc(mid * sizeof(int));
-        B12[i] = (int *)malloc(mid * sizeof(int));
-        B21[i] = (int *)malloc(mid * sizeof(int));
-        B22[i] = (int *)malloc(mid * sizeof(int));
-        C11[i] = (int *)malloc(mid * sizeof(int));
-        C12[i] = (int *)malloc(mid * sizeof(int));
-        C21[i] = (int *)malloc(mid * sizeof(int));
-        C22[i] = (int *)malloc(mid * sizeof(int));
-        M1[i] = (int *)malloc(mid * sizeof(int));
-        M2[i] = (int *)malloc(mid * sizeof(int));
-        M3[i] = (int *)malloc(mid * sizeof(int));
-        M4[i] = (int *)malloc(mid * sizeof(int));
-        M5[i] = (int *)malloc(mid * sizeof(int));
-        M6[i] = (int *)malloc(mid * sizeof(int));
-        M7[i] = (int *)malloc(mid * sizeof(int));
-        temp1[i] = (int *)malloc(mid * sizeof(int));
-        temp2[i] = (int *)malloc(mid * sizeof(int));
+        A11[i] = malloc(mid * sizeof(long long));
+        A12[i] = malloc(mid * sizeof(long long));
+        A21[i] = malloc(mid * sizeof(long long));
+        A22[i] = malloc(mid * sizeof(long long));
+        B11[i] = malloc(mid * sizeof(long long));
+        B12[i] = malloc(mid * sizeof(long long));
+        B21[i] = malloc(mid * sizeof(long long));
+        B22[i] = malloc(mid * sizeof(long long));
+        C11[i] = malloc(mid * sizeof(long long));
+        C12[i] = malloc(mid * sizeof(long long));
+        C21[i] = malloc(mid * sizeof(long long));
+        C22[i] = malloc(mid * sizeof(long long));
+        M1[i] = malloc(mid * sizeof(long long));
+        M2[i] = malloc(mid * sizeof(long long));
+        M3[i] = malloc(mid * sizeof(long long));
+        M4[i] = malloc(mid * sizeof(long long));
+        M5[i] = malloc(mid * sizeof(long long));
+        M6[i] = malloc(mid * sizeof(long long));
+        M7[i] = malloc(mid * sizeof(long long));
+        temp1[i] = malloc(mid * sizeof(long long));
+        temp2[i] = malloc(mid * sizeof(long long));
     }
 
     // Dividir en submatrices
@@ -88,32 +89,32 @@ void multiplyMatricesStrassenNaiv(int **A, int **B, int **C, int n) {
         }
     }
 
-    // Calcular los 7 productos de Strassen (M1 - M7)
+    // Calcular los productos de Strassen
     add(A11, A22, temp1, mid);
     add(B11, B22, temp2, mid);
-    strassen_naive(temp1, temp2, M1, mid); // M1 = (A11 + A22) * (B11 + B22)
+    multiplyMatricesStrassenNaiv(temp1, temp2, M1, mid); // M1 = (A11 + A22) * (B11 + B22)
 
     add(A21, A22, temp1, mid);
-    strassen_naive(temp1, B11, M2, mid); // M2 = (A21 + A22) * B11
+    multiplyMatricesStrassenNaiv(temp1, B11, M2, mid); // M2 = (A21 + A22) * B11
 
     subtract(B12, B22, temp2, mid);
-    strassen_naive(A11, temp2, M3, mid); // M3 = A11 * (B12 - B22)
+    multiplyMatricesStrassenNaiv(A11, temp2, M3, mid); // M3 = A11 * (B12 - B22)
 
     subtract(B21, B11, temp2, mid);
-    strassen_naive(A22, temp2, M4, mid); // M4 = A22 * (B21 - B11)
+    multiplyMatricesStrassenNaiv(A22, temp2, M4, mid); // M4 = A22 * (B21 - B11)
 
     add(A11, A12, temp1, mid);
-    strassen_naive(temp1, B22, M5, mid); // M5 = (A11 + A12) * B22
+    multiplyMatricesStrassenNaiv(temp1, B22, M5, mid); // M5 = (A11 + A12) * B22
 
     subtract(A21, A11, temp1, mid);
     add(B11, B12, temp2, mid);
-    strassen_naive(temp1, temp2, M6, mid); // M6 = (A21 - A11) * (B11 + B12)
+    multiplyMatricesStrassenNaiv(temp1, temp2, M6, mid); // M6 = (A21 - A11) * (B11 + B12)
 
     subtract(A12, A22, temp1, mid);
     add(B21, B22, temp2, mid);
-    strassen_naive(temp1, temp2, M7, mid); // M7 = (A12 - A22) * (B21 + B22)
+    multiplyMatricesStrassenNaiv(temp1, temp2, M7, mid); // M7 = (A12 - A22) * (B21 + B22)
 
-    // Calcular C11, C12, C21, y C22
+    // Calcular C11, C12, C21 y C22
     add(M1, M4, temp1, mid);
     subtract(temp1, M5, temp2, mid);
     add(temp2, M7, C11, mid); // C11 = M1 + M4 - M5 + M7
@@ -126,7 +127,7 @@ void multiplyMatricesStrassenNaiv(int **A, int **B, int **C, int n) {
     subtract(temp1, M2, temp2, mid);
     add(temp2, M6, C22, mid); // C22 = M1 + M3 - M2 + M6
 
-    // Combinar los resultados en C
+    // Combinar submatrices en C
     for (int i = 0; i < mid; i++) {
         for (int j = 0; j < mid; j++) {
             C[i][j] = C11[i][j];
@@ -153,6 +154,7 @@ void multiplyMatricesStrassenNaiv(int **A, int **B, int **C, int n) {
     free(M5); free(M6); free(M7);
     free(temp1); free(temp2);
 }
+
 
 // Función para leer matrices desde un archivo
 void readMatrices(const char *filename, long long ****matrices, int **rows, int **cols, int *matrixCount) {
@@ -278,7 +280,6 @@ int main(int argc, char *argv[]) {
 
     long long ***matrices;
     int *rows, *cols, matrixCount;
-    long double **result;
 
     readMatrices(matricesFile, &matrices, &rows, &cols, &matrixCount);
 
