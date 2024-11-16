@@ -1,4 +1,4 @@
-for x in {0..7}; do
+for x in {2..9}; do
 	tamanio=$((2 ** $x))
 	nombre_archivo="../CasosPrueba/matriz_${tamanio}x${tamanio}"
 	if [ ! -e $nombre_archivo ]; then
@@ -20,3 +20,4 @@ for x in {0..7}; do
 		echo "" >>$nombre_archivo
 	done
 done
+
