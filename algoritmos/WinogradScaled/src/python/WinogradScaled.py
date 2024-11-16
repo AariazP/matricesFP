@@ -45,7 +45,11 @@ def winograd_scaled(A, B):
             # Normalizar el resultado al aplicar los factores de escala
             C[i][j] *= row_scale[i] * col_scale[j]
             
-            C[i][j] = int(C[i][j])
+            # Usar un umbral para evitar redondeo prematuro a cero
+            if abs(C[i][j]) < 1e-6:  # Umbral pequeño (ajústalo según tu caso)
+                C[i][j] = 0
+            else:
+                C[i][j] = round(C[i][j])  # Redondear si el valor es significativo
 
     return C
 
