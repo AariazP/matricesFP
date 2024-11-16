@@ -128,11 +128,11 @@ void multiplyMatricesStrassenWinograd(long long** A, long long** B, long long** 
     restar_matrices(T2, B21, T4, mid);   // T4 = T2 - B21
 
     // Productos recursivos
-    strassen_winograd(A11, B11, P1, mid);      // P1 = A11 * B11
-    strassen_winograd(A12, B21, P2, mid);      // P2 = A12 * B21
-    strassen_winograd(S4, B22, P3, mid);       // P3 = S4 * B22
-    strassen_winograd(A22, T4, P4, mid);       // P4 = A22 * T4
-    strassen_winograd(S1, T1, P5, mid);        // P5 = S1 * T1
+    multiplyMatricesStrassenWinograd(A11, B11, P1, mid);      // P1 = A11 * B11
+    multiplyMatricesStrassenWinograd(A12, B21, P2, mid);      // P2 = A12 * B21
+    multiplyMatricesStrassenWinograd(S4, B22, P3, mid);       // P3 = S4 * B22
+    multiplyMatricesStrassenWinograd(A22, T4, P4, mid);       // P4 = A22 * T4
+    multiplyMatricesStrassenWinograd(S1, T1, P5, mid);        // P5 = S1 * T1
 
     // Cálculo de las submatrices de C usando Winograd
     sumar_matrices(P1, P2, C11, mid);          // C11 = P1 + P2
@@ -293,7 +293,6 @@ int main(int argc, char *argv[]) {
 
     long long ***matrices;
     int *rows, *cols, matrixCount;
-    long double **result;
 
     readMatrices(matricesFile, &matrices, &rows, &cols, &matrixCount);
 
