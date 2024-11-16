@@ -87,7 +87,7 @@ def graficar_tiempos_combinados(tiempos_por_algoritmo, titulo):
     
     # Crear un gráfico de barras agrupadas
     x = np.arange(len(tamaños_unicos))  # Posiciones para cada tamaño de matriz
-    ancho_barra = 0.05  # Ancho de cada grupo de barras
+    ancho_barra = 0.04  # Ancho de cada grupo de barras
     
     plt.figure(figsize=(12, 8))
     
