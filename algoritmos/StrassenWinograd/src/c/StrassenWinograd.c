@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+#include <errno.h>
+#include <math.h>
 
 // Función auxiliar para crear una matriz dinámica de tamaño n x n
 long long** crear_matriz(int n) {
@@ -47,7 +52,7 @@ void restar_matrices(long long** A, long long** B, long long** C, int n) {
 }
 
 // Función para multiplicar matrices usando el algoritmo de Strassen-Winograd
-void strassen_winograd(long long** A, long long** B, long long** C, int n) {
+void multiplyMatricesStrassenWinograd(long long** A, long long** B, long long** C, int n) {
     // Caso base: matrices pequeñas
     if (n <= 64) { // Umbral ajustable según rendimiento
         for (int i = 0; i < n; i++) {
@@ -164,70 +169,173 @@ void strassen_winograd(long long** A, long long** B, long long** C, int n) {
     liberar_matriz(U5, mid);
 }
 
-// Función de multiplicación estándar para comparación
-void multiplicacion_estandar(long long** A, long long** B, long long** C, int n) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            C[i][j] = 0;
-            for (int k = 0; k < n; k++) {
-                C[i][j] += A[i][k] * B[k][j];
+// Función para leer matrices desde un archivo
+void readMatrices(const char *filename, long long ****matrices, int **rows, int **cols, int *matrixCount) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("No se puede abrir el archivo");
+        exit(EXIT_FAILURE);
+    }
+
+    long long ***tempMatrices = malloc(10 * sizeof(long long **));
+    *rows = malloc(10 * sizeof(int));
+    *cols = malloc(10 * sizeof(int));
+    int count = 0;
+
+    while (!feof(file)) {
+        long long **matrix = NULL;
+        int r = 0, c = 0;
+        char buffer[8192]; // Tamaño aumentado para grandes matrices
+
+        while (fgets(buffer, sizeof(buffer), file)) {
+            if (buffer[0] == '\n') {
+                if (r > 0) break;
+                continue;
             }
+
+            int colCount = 0;
+            char *token = strtok(buffer, " ");
+            while (token != NULL) {
+                if (colCount == 0) {
+                    matrix = realloc(matrix, sizeof(long long *) * (r + 1));
+                    if (!matrix) {
+                        perror("Error al reasignar memoria");
+                        exit(EXIT_FAILURE);
+                    }
+                    matrix[r] = malloc(sizeof(long long) * (strlen(buffer) / 2 + 1));
+                }
+                matrix[r][colCount++] = atoll(token);
+                token = strtok(NULL, " ");
+            }
+
+            if (r == 0) {
+                c = colCount;
+            } else if (colCount != c) {
+                fprintf(stderr, "Error: todas las filas deben tener el mismo número de columnas\n");
+                exit(EXIT_FAILURE);
+            }
+
+            r++;
         }
+
+        if (r > 0) {
+            tempMatrices[count] = matrix;
+            (*rows)[count] = r;
+            (*cols)[count] = c;
+            count++;
+        }
+    }
+
+    fclose(file);
+    *matrices = realloc(tempMatrices, sizeof(long long **) * count);
+    *matrixCount = count;
+}
+
+// Función para escribir la matriz de resultados en un archivo
+void writeMatrix(const char *filename, long long **matrix, int rows, int cols) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("No se puede crear el archivo");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            fprintf(file, "%lld ", matrix[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+
+// Función para registrar el tiempo de ejecución
+void writeExecutionTime(const char *filename, double time) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("No se puede crear el archivo de tiempo");
+        exit(EXIT_FAILURE);
+    }
+    fprintf(file, "Tiempo de ejecución: %f segundos\n", time);
+    fclose(file);
+}
+
+// Función para crear directorios de forma recursiva
+void createDirectoriesRecursively(const char *path) {
+    char temp[256];
+    snprintf(temp, sizeof(temp), "%s", path);
+
+    for (char *p = temp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if (mkdir(temp, 0777) == -1 && errno != EEXIST) {
+                perror("Error creando directorio");
+                exit(EXIT_FAILURE);
+            }
+            *p = '/';
+        }
+    }
+
+    if (mkdir(temp, 0777) == -1 && errno != EEXIST) {
+        perror("Error creando directorio");
+        exit(EXIT_FAILURE);
     }
 }
 
-// Función para imprimir una matriz
-void imprimir_matriz(long long** matriz, int n) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%lld ", matriz[i][j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
-int main() {
-    srand(time(NULL));  // Inicializar semilla para números aleatorios
-    
-    // Asegurarse que n sea potencia de 2
-    int n = 4;
-    
-    // Crear y asignar memoria para las matrices
-    long long** A = crear_matriz(n);
-    long long** B = crear_matriz(n);
-    long long** C = crear_matriz(n);
-    long long** C_std = crear_matriz(n);
-
-    // Inicializar matrices con valores aleatorios
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            A[i][j] = rand() % 10;  // Números más pequeños para facilitar verificación
-            B[i][j] = rand() % 10;
-        }
+// Función principal
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Uso: %s <archivo_matrices>\n", argv[0]);
+        return EXIT_FAILURE;
     }
 
-    printf("Matriz A:\n");
-    imprimir_matriz(A, n);
-    
-    printf("Matriz B:\n");
-    imprimir_matriz(B, n);
-    
-    // Realizar multiplicación usando Strassen-Winograd
-    strassen_winograd(A, B, C, n);
-    printf("Resultado usando Strassen-Winograd:\n");
-    imprimir_matriz(C, n);
-    
-    // Realizar multiplicación estándar para comparación
-    multiplicacion_estandar(A, B, C_std, n);
-    printf("Resultado usando multiplicación estándar:\n");
-    imprimir_matriz(C_std, n);
+    const char *matricesFile = argv[1];
 
-    // Liberar memoria
-    liberar_matriz(A, n);
-    liberar_matriz(B, n);
-    liberar_matriz(C, n);
-    liberar_matriz(C_std, n);
+    long long ***matrices;
+    int *rows, *cols, matrixCount;
+    long double **result;
 
-    return 0;
+    readMatrices(matricesFile, &matrices, &rows, &cols, &matrixCount);
+
+    if (matrixCount < 2) {
+        fprintf(stderr, "Error: Se requieren al menos dos matrices para multiplicar\n");
+        return EXIT_FAILURE;
+    }
+
+    if (cols[0] != rows[1]) {
+        fprintf(stderr, "Error: Las matrices no se pueden multiplicar\n");
+        return EXIT_FAILURE;
+    }
+
+    long long **result = malloc(rows[0] * sizeof(long long *));
+    for (int i = 0; i < rows[0]; i++) {
+        result[i] = calloc(cols[1], sizeof(long long));
+    }
+
+    clock_t start = clock();
+    multiplyMatricesStrassenWinograd(matrices[0], matrices[1], result, rows[0]);
+    clock_t end = clock();
+
+    char tiempoFile[150], resultadoFile[150];
+    snprintf(tiempoFile, sizeof(tiempoFile), "../../../../Resultados/StrassenWinograd/c/tiempo/tiempo_StrassenWinograd_%dx%d.txt", rows[0], cols[1]);
+    snprintf(resultadoFile, sizeof(resultadoFile), "../../../../Resultados/StrassenWinograd/c/resultadomultiplicacion/resultado_StrassenWinograd_%dx%d.txt", rows[0], cols[1]);
+
+    createDirectoriesRecursively("../../../../Resultados/StrassenWinograd/c/tiempo");
+    createDirectoriesRecursively("../../../../Resultados/StrassenWinograd/c/resultadomultiplicacion");
+
+    double elapsedTime = (double)(end - start) / CLOCKS_PER_SEC;
+    writeExecutionTime(tiempoFile, elapsedTime);
+    writeMatrix(resultadoFile, result, rows[0], cols[1]);
+
+    for (int i = 0; i < matrixCount; i++) {
+        for (int j = 0; j < rows[i]; j++) free(matrices[i][j]);
+        free(matrices[i]);
+    }
+    for (int i = 0; i < rows[0]; i++) free(result[i]);
+    free(rows);
+    free(cols);
+    free(result);
+    free(matrices);
+
+    return EXIT_SUCCESS;
 }

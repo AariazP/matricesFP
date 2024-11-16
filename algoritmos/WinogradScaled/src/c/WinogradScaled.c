@@ -1,24 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+#include <errno.h>
 #include <math.h>
 
-void imprimirMatriz(long double **C, long long tamanio) {
-    for (int i = 0; i < tamanio; i++) {
-        for (int j = 0; j < tamanio; j++) {
-            printf("%Lf ", C[i][j]);  // %Lf para imprimir long double
-        }
-        printf("\n");
-    }
-}
+// algoritmo Winograd Scaled para multiplicacion de matrices
+long double** multiplyMatricesWinogradScaled(long double **A, long double **B, long long n) {
 
-void imprimirArray(long double *C, long long tamano) {
-    for (int i = 0; i < tamano; i++) {
-        printf("%Lf ", C[i]);  // %Lf para imprimir long double
-    }
-    printf("\n");
-}
-
-long double** winograd_scaled(long double **A, long double **B, long long n) {
     long double **C = calloc(n, sizeof(long double*));
     for (long long i = 0; i < n; i++) {
         C[i] = calloc(n, sizeof(long double));
@@ -27,7 +18,6 @@ long double** winograd_scaled(long double **A, long double **B, long long n) {
     long double *row_scale = calloc(n, sizeof(long double));
     long double *col_scale = calloc(n, sizeof(long double));
 
-    // Calculate row and column scale factors
     for (long i = 0; i < n; i++) {
         for (long j = 0; j < n; j++) {
             if (fabs(A[i][j]) > row_scale[i]) {
@@ -47,7 +37,6 @@ long double** winograd_scaled(long double **A, long double **B, long long n) {
     long double *row_factor = calloc(n, sizeof(long double));
     long double *col_factor = calloc(n, sizeof(long double));
 
-    // Calculate row and column factors
     for (long i = 0; i < n; i++) {
         for (long j = 0; j < n / 2; j++) {
             row_factor[i] += (A[i][2 * j] / row_scale[i]) * (A[i][2 * j + 1] / row_scale[i]);
@@ -59,7 +48,6 @@ long double** winograd_scaled(long double **A, long double **B, long long n) {
         }
     }
 
-    // Compute the result matrix C
     for (long i = 0; i < n; i++) {
         for (long j = 0; j < n; j++) {
             C[i][j] = -row_factor[i] - col_factor[j];
@@ -71,11 +59,10 @@ long double** winograd_scaled(long double **A, long double **B, long long n) {
                 C[i][j] += (A[i][n - 1] / row_scale[i]) * (B[n - 1][j] / col_scale[j]);
             }
             C[i][j] *= row_scale[i] * col_scale[j];
-            C[i][j] = (long double)C[i][j];  // Casting to long double
+            C[i][j] = (long double)C[i][j];
         }
     }
 
-    // No liberar la memoria de C aquí, se hace fuera de la función
     free(row_scale);
     free(col_scale);
     free(row_factor);
@@ -84,64 +71,173 @@ long double** winograd_scaled(long double **A, long double **B, long long n) {
     return C;
 }
 
-void test_winograd_scaled() {
-    // Definir las dimensiones de las matrices
-    long long n = 4;
-
-    // Crear matrices A y B para la prueba
-    long double** A = (long double**)malloc(n * sizeof(long double*));
-    for (long long i = 0; i < n; i++) {
-        A[i] = (long double*)malloc(n * sizeof(long double));
+// Función para leer matrices desde un archivo
+void readMatrices(const char *filename, long long ****matrices, int **rows, int **cols, int *matrixCount) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("No se puede abrir el archivo");
+        exit(EXIT_FAILURE);
     }
 
-    long double** B = (long double**)malloc(n * sizeof(long double*));
-    for (long long i = 0; i < n; i++) {
-        B[i] = (long double*)malloc(n * sizeof(long double));
-    }
+    long long ***tempMatrices = malloc(10 * sizeof(long long **));
+    *rows = malloc(10 * sizeof(int));
+    *cols = malloc(10 * sizeof(int));
+    int count = 0;
 
-    // Llenar las matrices A y B con valores de ejemplo
-    A[0][0] = 1; A[0][1] = 2; A[0][2] = 3; A[0][3] = 4;
-    A[1][0] = 5; A[1][1] = 6; A[1][2] = 7; A[1][3] = 8;
-    A[2][0] = 9; A[2][1] = 10; A[2][2] = 11; A[2][3] = 12;
-    A[3][0] = 13; A[3][1] = 14; A[3][2] = 15; A[3][3] = 16;
+    while (!feof(file)) {
+        long long **matrix = NULL;
+        int r = 0, c = 0;
+        char buffer[8192]; // Tamaño aumentado para grandes matrices
 
-    // Asignación de valores a la matriz B
-    B[0][0] = 17; B[0][1] = 18; B[0][2] = 19; B[0][3] = 20;
-    B[1][0] = 21; B[1][1] = 22; B[1][2] = 23; B[1][3] = 24;
-    B[2][0] = 25; B[2][1] = 26; B[2][2] = 27; B[2][3] = 28;
-    B[3][0] = 29; B[3][1] = 30; B[3][2] = 31; B[3][3] = 32;
+        while (fgets(buffer, sizeof(buffer), file)) {
+            if (buffer[0] == '\n') {
+                if (r > 0) break;
+                continue;
+            }
 
-    // Llamar a la función winograd_scaled
-    long double** C = winograd_scaled(A, B, n);
+            int colCount = 0;
+            char *token = strtok(buffer, " ");
+            while (token != NULL) {
+                if (colCount == 0) {
+                    matrix = realloc(matrix, sizeof(long long *) * (r + 1));
+                    if (!matrix) {
+                        perror("Error al reasignar memoria");
+                        exit(EXIT_FAILURE);
+                    }
+                    matrix[r] = malloc(sizeof(long long) * (strlen(buffer) / 2 + 1));
+                }
+                matrix[r][colCount++] = atoll(token);
+                token = strtok(NULL, " ");
+            }
 
-    // Imprimir la matriz resultante C
-    printf("Resultado de la multiplicación de matrices Winograd escalada:\n");
-    for (long long i = 0; i < n; i++) {
-        for (long long j = 0; j < n; j++) {
-            printf("%Lg ", C[i][j]);  // %Lf para imprimir long double
+            if (r == 0) {
+                c = colCount;
+            } else if (colCount != c) {
+                fprintf(stderr, "Error: todas las filas deben tener el mismo número de columnas\n");
+                exit(EXIT_FAILURE);
+            }
+
+            r++;
         }
-        printf("\n");
+
+        if (r > 0) {
+            tempMatrices[count] = matrix;
+            (*rows)[count] = r;
+            (*cols)[count] = c;
+            count++;
+        }
     }
 
-    // Liberar memoria de las matrices A, B y C
-    for (long long i = 0; i < n; i++) {
-        free(A[i]);
-    }
-    for (long long i = 0; i < n; i++) {
-        free(B[i]);
-    }
-    free(A);
-    free(B);
-
-    // Liberar memoria de la matriz C después de que haya sido utilizada
-    for (long long i = 0; i < n; i++) {
-        free(C[i]);
-    }
-    free(C);
+    fclose(file);
+    *matrices = realloc(tempMatrices, sizeof(long long **) * count);
+    *matrixCount = count;
 }
 
-int main() {
-    // Ejecutar la prueba
-    test_winograd_scaled();
-    return 0;
+// Función para escribir la matriz de resultados en un archivo
+void writeMatrix(const char *filename, long long **matrix, int rows, int cols) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("No se puede crear el archivo");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            fprintf(file, "%lld ", matrix[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+
+// Función para registrar el tiempo de ejecución
+void writeExecutionTime(const char *filename, double time) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("No se puede crear el archivo de tiempo");
+        exit(EXIT_FAILURE);
+    }
+    fprintf(file, "Tiempo de ejecución: %f segundos\n", time);
+    fclose(file);
+}
+
+// Función para crear directorios de forma recursiva
+void createDirectoriesRecursively(const char *path) {
+    char temp[256];
+    snprintf(temp, sizeof(temp), "%s", path);
+
+    for (char *p = temp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if (mkdir(temp, 0777) == -1 && errno != EEXIST) {
+                perror("Error creando directorio");
+                exit(EXIT_FAILURE);
+            }
+            *p = '/';
+        }
+    }
+
+    if (mkdir(temp, 0777) == -1 && errno != EEXIST) {
+        perror("Error creando directorio");
+        exit(EXIT_FAILURE);
+    }
+}
+
+// Función principal
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Uso: %s <archivo_matrices>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    const char *matricesFile = argv[1];
+
+    long long ***matrices;
+    int *rows, *cols, matrixCount;
+    long double **result;
+
+    readMatrices(matricesFile, &matrices, &rows, &cols, &matrixCount);
+
+    if (matrixCount < 2) {
+        fprintf(stderr, "Error: Se requieren al menos dos matrices para multiplicar\n");
+        return EXIT_FAILURE;
+    }
+
+    if (cols[0] != rows[1]) {
+        fprintf(stderr, "Error: Las matrices no se pueden multiplicar\n");
+        return EXIT_FAILURE;
+    }
+
+    long long **result = malloc(rows[0] * sizeof(long long *));
+    for (int i = 0; i < rows[0]; i++) {
+        result[i] = calloc(cols[1], sizeof(long long));
+    }
+
+    clock_t start = clock();
+    result = multiplyMatricesWinogradScaled(matrices[0], matrices[1], rows[0]);
+    clock_t end = clock();
+
+    char tiempoFile[150], resultadoFile[150];
+    snprintf(tiempoFile, sizeof(tiempoFile), "../../../../Resultados/WinogradScaled/c/tiempo/tiempo_WinogradScaled_%dx%d.txt", rows[0], cols[1]);
+    snprintf(resultadoFile, sizeof(resultadoFile), "../../../../Resultados/WinogradScaled/c/resultadomultiplicacion/resultado_WinogradScaled_%dx%d.txt", rows[0], cols[1]);
+
+    createDirectoriesRecursively("../../../../Resultados/WinogradScaled/c/tiempo");
+    createDirectoriesRecursively("../../../../Resultados/WinogradScaled/c/resultadomultiplicacion");
+
+    double elapsedTime = (double)(end - start) / CLOCKS_PER_SEC;
+    writeExecutionTime(tiempoFile, elapsedTime);
+    writeMatrix(resultadoFile, result, rows[0], cols[1]);
+
+    for (int i = 0; i < matrixCount; i++) {
+        for (int j = 0; j < rows[i]; j++) free(matrices[i][j]);
+        free(matrices[i]);
+    }
+    for (int i = 0; i < rows[0]; i++) free(result[i]);
+    free(rows);
+    free(cols);
+    free(result);
+    free(matrices);
+
+    return EXIT_SUCCESS;
 }
