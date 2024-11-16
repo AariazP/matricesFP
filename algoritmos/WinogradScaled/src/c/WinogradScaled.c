@@ -72,20 +72,20 @@ long double** multiplyMatricesWinogradScaled(long double **A, long double **B, l
 }
 
 // Función para leer matrices desde un archivo
-void readMatrices(const char *filename, long long ****matrices, int **rows, int **cols, int *matrixCount) {
+void readMatrices(const char *filename, long double ****matrices, int **rows, int **cols, int *matrixCount) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         perror("No se puede abrir el archivo");
         exit(EXIT_FAILURE);
     }
 
-    long long ***tempMatrices = malloc(10 * sizeof(long long **));
+    long double ***tempMatrices = malloc(10 * sizeof(long long **));
     *rows = malloc(10 * sizeof(int));
     *cols = malloc(10 * sizeof(int));
     int count = 0;
 
     while (!feof(file)) {
-        long long **matrix = NULL;
+        long double **matrix = NULL;
         int r = 0, c = 0;
         char buffer[8192]; // Tamaño aumentado para grandes matrices
 
@@ -134,7 +134,7 @@ void readMatrices(const char *filename, long long ****matrices, int **rows, int 
 }
 
 // Función para escribir la matriz de resultados en un archivo
-void writeMatrix(const char *filename, long long **matrix, int rows, int cols) {
+void writeMatrix(const char *filename, long double **matrix, int rows, int cols) {
     FILE *file = fopen(filename, "w");
     if (!file) {
         perror("No se puede crear el archivo");
@@ -143,7 +143,7 @@ void writeMatrix(const char *filename, long long **matrix, int rows, int cols) {
 
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            fprintf(file, "%lld ", matrix[i][j]);
+            fprintf(file, "%Lf ", matrix[i][j]);
         }
         fprintf(file, "\n");
     }
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 
     const char *matricesFile = argv[1];
 
-    long long ***matrices;
+    long double ***matrices;
     int *rows, *cols, matrixCount;
     long double **result;
 
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    long long **result = malloc(rows[0] * sizeof(long long *));
+    result = malloc(rows[0] * sizeof(long long *));
     for (int i = 0; i < rows[0]; i++) {
         result[i] = calloc(cols[1], sizeof(long long));
     }
