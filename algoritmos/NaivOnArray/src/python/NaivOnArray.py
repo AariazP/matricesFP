@@ -3,7 +3,21 @@ import time
 import os
 
 def multiply_matrices(a, b):
-    return np.dot(a, b)
+    rows_a, cols_a = a.shape
+    rows_b, cols_b = b.shape
+    if cols_a != rows_b:
+        raise ValueError("Error: Las matrices no se pueden multiplicar (dimensiones incompatibles).")
+    
+    # Crear matriz resultado con ceros
+    result = np.zeros((rows_a, cols_b), dtype=int)
+
+    # Calcular el producto de matrices explícitamente
+    for i in range(rows_a):
+        for j in range(cols_b):
+            for k in range(cols_a):
+                result[i, j] += a[i, k] * b[k, j]
+    
+    return result
 
 def read_matrices(filename):
     matrices = []
